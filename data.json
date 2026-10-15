@@ -43,24 +43,14 @@
   ],
   "accounts": [
     {
-      "id": "sdf",
-      "name": "",
-      "secret": ""
-    },
-    {
-      "id": "sdf",
-      "name": "",
-      "secret": ""
-    },
-    {
       "id": "079dfdcf-8f17-4664-978a-a3df04e03fdd",
       "name": "booger",
       "secretKey": "688787d8ff144c502c7f5cffaafe2cc588d86079f9de88304c26b0cb99ce91c6"
     },
     {
-      "id": "b3dc720d-e4fb-4f2b-8bc6-9aaf36a9f2e7",
+      "id": "b13ae849-c29d-4579-8d34-e1e9108e0596",
       "name": "booger",
-      "secretKey": "688787d8ff144c502c7f5cffaafe2cc588d86079f9de88304c26b0cb99ce91c6"
+      "secretKey": "1be622f7dc0e5cf097c1091a1ab99f6635ff4db8c2df97c07006709fd59faffa"
     }
   ]
 }

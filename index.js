@@ -18,7 +18,7 @@ app.get('/', (req, res) => {
   return res.status(404).json({ error: 'ok' });
 });
 
-app.get('/api/v1/jwt', (req, res) => {
+app.post('/api/v1/jwt', (req, res) => {
   try{
     const {name = "", secretKey = ""} = req.body
 
@@ -34,6 +34,7 @@ app.get('/api/v1/jwt', (req, res) => {
         logger.info({route: '/api/v1/jwt' }, 'JWT generated');
 
         res.cookie("jwt", token) // <-- Bullshit
+
         return res.status(201).json({error : token})
       }
   }
@@ -46,18 +47,15 @@ app.get('/api/v1/jwt', (req, res) => {
 app.post('/api/v1/call', async (req, res) => {
   try{
       const {token = "", content = ""} = req.body 
-      // TODO auth (check token)
 
       try{ 
         const decoded = jwt.verify(token, process.env.JWT_SECRET)
 
-        //TODO check user exist
         const fileContent = await fs.readFile("data.json", "utf-8")
         const data = JSON.parse(fileContent)
-        const existName = data.accounts.some(account => account.name === decoded.userName)
-        const existSecret = data.accounts.some(account => account.secret === decoded.secretKey)
+        const existUser = data.accounts.some(account => account.name === decoded.userName && account.secretKey === decoded.secretKey)
         
-        if (!(existName && existSecret)){
+        if (!existUser){
           const NewUser = {
             id : crypto.randomUUID(),
             name : decoded.userName,
@@ -68,8 +66,6 @@ app.post('/api/v1/call', async (req, res) => {
           await fs.writeFile("data.json", JSON.stringify(data, null, 2),"utf-8")
           logger.info({"user" : decoded.userName}, "User created")
         }
-
-
       }
       catch (error){
         logger.error(new Error(error))
@@ -82,6 +78,7 @@ app.post('/api/v1/call', async (req, res) => {
       }
       else{
         //TODO stream !!!
+        // TODO save 
         const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
           method: "POST",
           headers: {
@@ -101,6 +98,8 @@ app.post('/api/v1/call', async (req, res) => {
         })
 
         const data = await response.json()
+
+    
 
         logger.info({ response }, data)
 
