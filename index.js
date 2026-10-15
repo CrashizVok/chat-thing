@@ -1,4 +1,5 @@
 require('dotenv').config();
+const fs = require('fs/promises')
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const express = require('express');
@@ -7,8 +8,11 @@ const logger = pino();
 const app = express();
 app.use(express.json());
 const port = 3000;
-
 app.use(express.static('static'));
+
+//const userExist = () =>{
+//
+//}
 
 app.get('/', (req, res) => {
   return res.status(404).json({ error: 'ok' });
@@ -44,17 +48,28 @@ app.post('/api/v1/call', async (req, res) => {
       const {token = "", content = ""} = req.body 
       // TODO auth (check token)
 
-      try{ // const uniqueId = 
+      try{ 
         const decoded = jwt.verify(token, process.env.JWT_SECRET)
-        console.log(decoded);
 
         //TODO check user exist
+        const fileContent = await fs.readFile("data.json", "utf-8")
+        const data = JSON.parse(fileContent)
+        const existName = data.accounts.some(account => account.name === decoded.userName)
+        const existSecret = data.accounts.some(account => account.secret === decoded.secretKey)
+        
+        if (!(existName && existSecret)){
+          const NewUser = {
+            id : crypto.randomUUID(),
+            name : decoded.userName,
+            secretKey: decoded.secretKey
+          }
+          data.accounts.push(NewUser)
 
-        const user = {
-          id : crypto.randomUUID(),
-          name : decoded.userName,
-          secretKey: decoded.secretKey
+          await fs.writeFile("data.json", JSON.stringify(data, null, 2),"utf-8")
+          logger.info({"user" : decoded.userName}, "User created")
         }
+
+
       }
       catch (error){
         logger.error(new Error(error))
@@ -66,7 +81,7 @@ app.post('/api/v1/call', async (req, res) => {
         return res.status(403).json({error: "Unknown error. Try again!"})
       }
       else{
-        // First API call with reasoning
+        //TODO stream !!!
         const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
           method: "POST",
           headers: {
@@ -89,50 +104,8 @@ app.post('/api/v1/call', async (req, res) => {
 
         logger.info({ response }, data)
 
-        return res.status(200).json({ response: data.choices[0].message.content})
+        return res.status(200).json({ response: data?.choices[0]?.message?.content})
       }
-
-    
-
-    /*
-    // Extract the assistant message with reasoning_details and save it to the response variable
-    const result = await response.json();
-    response = result.choices[0].message;
-
-    // Preserve the assistant message with reasoning_details
-    const messages = [
-      {
-        role: 'user',
-        content: "How many r's are in the word 'strawberry'?",
-      },
-      {
-        role: 'assistant',
-        content: response.content,
-        reasoning_details: response.reasoning_details, // Pass back unmodified
-      },
-      {
-        role: 'user',
-        content: "Are you sure? Think carefully.",
-      },
-    ];
-
-    // Second API call - model continues reasoning from where it left off
-    const response2 = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        "model": "openrouter/free",
-        "messages": messages  // Includes preserved reasoning_details
-      })
-    });
-    */
-
-
-
-
   }
   catch{
     logger.error(new Error("Internal server error"))

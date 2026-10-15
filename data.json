@@ -1,56 +1,66 @@
 {
-    "chats" : [
+  "chats": [
+    {
+      "id": "dfg",
+      "model": "asd",
+      "created": "asd",
+      "messages": [
         {
-            "id" : "dfg",
-            "model" : "asd",
-            "created" : "asd",
-            "messages" : [
-                {
-                    "id" : "sdfsdf",
-                    "role" : "user",
-                    "name" : "booger",
-                    "content" : "woops"
-                },
-                {
-                    "id" : "sdfsdf",
-                    "role" : "assistant",
-                    "name" : "booger",
-                    "content" : "woops"
-                }
-            ],
-            "userId" : "rt"
+          "id": "sdfsdf",
+          "role": "user",
+          "name": "booger",
+          "content": "woops"
         },
         {
-            "id" : "dfg",
-            "model" : "asd",
-            "created" : "asd",
-            "messages" : [
-                {
-                    "id" : "sdfsdf",
-                    "role" : "user",
-                    "name" : "booger",
-                    "content" : "woops"
-                },
-                {
-                    "id" : "sdfsdf",
-                    "role" : "assistant",
-                    "name" : "booger",
-                    "content" : "woops"
-                }
-            ],
-            "userId" : "rt"
+          "id": "sdfsdf",
+          "role": "assistant",
+          "name": "booger",
+          "content": "woops"
         }
-    ],
-    "accounts" : [
+      ],
+      "userId": "rt"
+    },
+    {
+      "id": "dfg",
+      "model": "asd",
+      "created": "asd",
+      "messages": [
         {
-            "id" : "sdf",
-            "name" : "",
-            "secret": ""
+          "id": "sdfsdf",
+          "role": "user",
+          "name": "booger",
+          "content": "woops"
         },
         {
-            "id" : "sdf",
-            "name" : "",
-            "secret": ""
+          "id": "sdfsdf",
+          "role": "assistant",
+          "name": "booger",
+          "content": "woops"
         }
-    ]
+      ],
+      "userId": "rt"
+    }
+  ],
+  "accounts": [
+    {
+      "id": "sdf",
+      "name": "",
+      "secret": ""
+    },
+    {
+      "id": "sdf",
+      "name": "",
+      "secret": ""
+    },
+    {
+      "id": "079dfdcf-8f17-4664-978a-a3df04e03fdd",
+      "name": "booger",
+      "secretKey": "688787d8ff144c502c7f5cffaafe2cc588d86079f9de88304c26b0cb99ce91c6"
+    },
+    {
+      "id": "b3dc720d-e4fb-4f2b-8bc6-9aaf36a9f2e7",
+      "name": "booger",
+      "secretKey": "688787d8ff144c502c7f5cffaafe2cc588d86079f9de88304c26b0cb99ce91c6"
+    }
+  ]
 }

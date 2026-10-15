@@ -1,0 +1,56 @@
+{
+    "chats" : [
+        {
+            "id" : "dfg",
+            "model" : "asd",
+            "created" : "asd",
+            "messages" : [
+                {
+                    "id" : "sdfsdf",
+                    "role" : "user",
+                    "name" : "booger",
+                    "content" : "woops"
+                },
+                {
+                    "id" : "sdfsdf",
+                    "role" : "assistant",
+                    "name" : "booger",
+                    "content" : "woops"
+                }
+            ],
+            "userId" : "rt"
+        },
+        {
+            "id" : "dfg",
+            "model" : "asd",
+            "created" : "asd",
+            "messages" : [
+                {
+                    "id" : "sdfsdf",
+                    "role" : "user",
+                    "name" : "booger",
+                    "content" : "woops"
+                },
+                {
+                    "id" : "sdfsdf",
+                    "role" : "assistant",
+                    "name" : "booger",
+                    "content" : "woops"
+                }
+            ],
+            "userId" : "rt"
+        }
+    ],
+    "accounts" : [
+        {
+            "id" : "sdf",
+            "name" : "",
+            "secret": ""
+        },
+        {
+            "id" : "sdf",
+            "name" : "",
+            "secret": ""
+        }
+    ]
+}
