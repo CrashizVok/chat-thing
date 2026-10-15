@@ -1,7 +1,6 @@
 require('dotenv').config();
 const jwt = require('jsonwebtoken');
 const express = require('express');
-const { resolve } = require('path');
 const pino = require('pino');
 const logger = pino();
 const app = express();
