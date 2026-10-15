@@ -1,5 +1,6 @@
 require('dotenv').config();
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const express = require('express');
 const pino = require('pino');
 const logger = pino();
@@ -22,13 +23,14 @@ app.get('/api/v1/jwt', (req, res) => {
         return res.status(403).json({error: "Unknown error. Try again!"})
       }
       else{
-        const token = jwt.sign({ userName: name, secretKey: secretKey }, process.env.JWT_SECRET, {
+        const hash = crypto.createHash("sha256").update(secretKey).digest("hex")
+        const token = jwt.sign({ userName: name, secretKey:  hash}, process.env.JWT_SECRET, {
           expiresIn: '1h',
         });
         logger.info({route: '/api/v1/jwt' }, 'JWT generated');
 
-        res.cookie("jwt", token)
-        return res.status(201).json({error : "JWT generated"})
+        res.cookie("jwt", token) // <-- Bullshit
+        return res.status(201).json({error : token})
       }
   }
   catch{
@@ -39,24 +41,95 @@ app.get('/api/v1/jwt', (req, res) => {
 
 app.post('/api/v1/call', async (req, res) => {
   try{
-    // TODO auth (check token)
-    const secret = process.env.OPENROUTER
+      const {token = "", content = ""} = req.body 
+      // TODO auth (check token)
 
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      try{ // const uniqueId = 
+        const decoded = jwt.verify(token, process.env.JWT_SECRET)
+        console.log(decoded);
+
+        //TODO check user exist
+
+        const user = {
+          id : crypto.randomUUID(),
+          name : decoded.userName,
+          secretKey: decoded.secretKey
+        }
+      }
+      catch (error){
+        logger.error(new Error(error))
+        return res.status(403).json({error: "Jwt error"})
+      }
+      
+      if (!content){
+        logger.info({route: '/api/v1/call' }, "The content's required.");
+        return res.status(403).json({error: "Unknown error. Try again!"})
+      }
+      else{
+        // First API call with reasoning
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${ process.env.OPENROUTER_API_KEY}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            "model": "openrouter/free",
+            "messages": [
+              {
+                "role": "user",
+                "content": content ///`${content}`
+              }
+            ],
+            "reasoning": {"enabled": true}
+          })
+        })
+
+        const data = await response.json()
+
+        logger.info({ response }, data)
+
+        return res.status(200).json({ response: data.choices[0].message.content})
+      }
+
+    
+
+    /*
+    // Extract the assistant message with reasoning_details and save it to the response variable
+    const result = await response.json();
+    response = result.choices[0].message;
+
+    // Preserve the assistant message with reasoning_details
+    const messages = [
+      {
+        role: 'user',
+        content: "How many r's are in the word 'strawberry'?",
+      },
+      {
+        role: 'assistant',
+        content: response.content,
+        reasoning_details: response.reasoning_details, // Pass back unmodified
+      },
+      {
+        role: 'user',
+        content: "Are you sure? Think carefully.",
+      },
+    ];
+
+    // Second API call - model continues reasoning from where it left off
+    const response2 = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
       headers: {
-        Authorization: `Bearer ${secret}`,
-        'Content-Type': 'application/json',
+        "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: 'openai/gpt-5.2', // change this 
-        messages: [
-          {
-            role: 'user',
-            content: `${content}`,
-          },
-        ],
-      }) 
-    })
+        "model": "openrouter/free",
+        "messages": messages  // Includes preserved reasoning_details
+      })
+    });
+    */
+
 
 
 
@@ -65,28 +138,6 @@ app.post('/api/v1/call', async (req, res) => {
     logger.error(new Error("Internal server error"))
     return res.status(500).json({error: "Internal server error"})
   } 
-
-  /*TODO 
-  fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      Authorization: 'Bearer <OPENROUTER_API_KEY>',
-      'HTTP-Referer': '<YOUR_SITE_URL>', // Optional. Site URL for rankings on openrouter.ai.
-      'X-OpenRouter-Title': '<YOUR_SITE_NAME>', // Optional. Site title for rankings on openrouter.ai.
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'openai/gpt-5.2',
-      messages: [
-        {
-          role: 'user',
-          content: 'What is the meaning of life?',
-        },
-      ],
-    }),
-  });
-  */
-  return res.status(404).json({ error: 'ok' });
 });
 
 app.listen(port, () => {
