@@ -35,7 +35,7 @@ app.post("/api/v1/jwt", (req, res) => {
 			});
 			logger.info({ route: "/api/v1/jwt" }, "JWT generated");
 
-			return res.status(201).json({ jwt: token });
+			return res.status(201).json({ token: token });
 		}
 	} catch {
 		logger.error(new Error("Internal server error"));
@@ -45,65 +45,87 @@ app.post("/api/v1/jwt", (req, res) => {
 
 app.post("/api/v1/call", async (req, res) => {
 	try {
-		const { token = "", content = "" } = req.body;
+		const { token = "", content = "", chatId = "" } = req.body;
 
+		let decoded;
 		try {
-			const decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ["HS256"] });
-			console.log(decoded);
-
-			const fileContent = await fs.readFile("data.json", "utf-8");
-			const data = JSON.parse(fileContent);
-			const existUser = data.accounts.some(
-				(account) => account.name === decoded.name && account.id === decoded.sub,
-			);
-
-			if (!existUser) {
-				const NewUser = {
-					id: decoded.sub,
-					name: decoded.name,
-				};
-				data.accounts.push(NewUser);
-
-				await fs.writeFile("data.json", JSON.stringify(data, null, 2), "utf-8");
-				logger.info({ user: decoded.name }, "User created");
-			}
+			decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ["HS256"] });
 		} catch (error) {
-			logger.error(new Error(error));
+			logger.error(error);
 			return res.status(403).json({ error: "Jwt error" });
 		}
 
 		if (!content) {
-			logger.info({ route: "/api/v1/call" }, "The content's required.");
-			return res.status(403).json({ error: "Unknown error. Try again!" });
-		} else {
-			//TODO stream !!!
-			// TODO save
-			const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-				method: "POST",
-				headers: {
-					Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({
-					model: "openrouter/free",
-					messages: [
-						{
-							role: "user",
-							content: content, ///`${content}`
-						},
-					],
-					reasoning: { enabled: true },
-				}),
-			});
-
-			const data = await response.json();
-
-			logger.info({ response }, data);
-
-			return res.status(200).json({ response: data?.choices[0]?.message?.content });
+			return res.status(400).json({ error: "Content is required" });
 		}
-	} catch {
-		logger.error(new Error("Internal server error"));
+
+		const before = JSON.parse(await fs.readFile("data.json", "utf-8"));
+		const oldChat = before.chats.find((c) => c.id === chatId && c.userId === decoded.sub);
+
+		const history = oldChat
+			? oldChat.messages.map((m) => ({ role: m.role, content: m.content }))
+			: [];
+
+		const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+			method: "POST",
+			headers: {
+				Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({
+				model: "openrouter/free",
+				messages: [...history, { role: "user", content }],
+				reasoning: { enabled: true },
+			}),
+		});
+		const data = await response.json();
+
+		if (!response.ok || !data?.choices?.[0]) {
+			logger.error({ status: response.status, data }, "OpenRouter error");
+			return res.status(502).json({ error: "Upstream error" });
+		}
+
+		const userMSG = {
+			id: crypto.randomUUID(),
+			role: "user",
+			name: decoded.name,
+			content,
+		};
+		const botMSG = {
+			id: crypto.randomUUID(),
+			provider: data.provider,
+			model: data.model,
+			tokenUsage: data.usage?.total_tokens,
+			reasoning: data.choices[0].message?.reasoning,
+			role: data.choices[0].message?.role,
+			content: data.choices[0].message?.content,
+		};
+
+		const filedata = JSON.parse(await fs.readFile("data.json", "utf-8"));
+
+		if (!filedata.accounts.some((a) => a.id === decoded.sub)) {
+			filedata.accounts.push({ id: decoded.sub, name: decoded.name });
+			logger.info({ user: decoded.name }, "User created");
+		}
+
+		let currentChat = filedata.chats.find((c) => c.id === chatId && c.userId === decoded.sub);
+		if (currentChat) {
+			currentChat.messages.push(userMSG, botMSG);
+		} else {
+			currentChat = {
+				id: crypto.randomUUID(),
+				userId: decoded.sub,
+				createdTime: Date.now(),
+				messages: [userMSG, botMSG],
+			};
+			filedata.chats.push(currentChat);
+		}
+
+		await fs.writeFile("data.json", JSON.stringify(filedata, null, 2), "utf-8");
+
+		return res.status(200).json({ response: botMSG.content, chatId: currentChat.id });
+	} catch (error) {
+		logger.error(error);
 		return res.status(500).json({ error: "Internal server error" });
 	}
 });
